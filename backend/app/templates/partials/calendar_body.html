@@ -1,0 +1,87 @@
+{% import "macros.html" as ui %}
+{% set today_year = today_iso[0:4] %}
+{% set today_month = today_iso[5:7]|int %}
+{% set kind_base = '/calendar?kind=' ~ kind %}
+
+<div x-data="{ sel: {{ selected|tojson if selected else 'null' }} }">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div class="flex gap-1 bg-slate-200/60 dark:bg-slate-800 rounded-xl p-1">
+      <button type="button"
+              hx-get="/calendar?kind=tasks&year={{ year }}&month={{ month }}"
+              hx-target="#calendar-body" hx-swap="innerHTML" hx-push-url="true"
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors {{ 'bg-white shadow-soft text-blue-700 dark:bg-slate-700 dark:text-blue-300' if kind == 'tasks' else 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}">
+        {{ ui.icon('list-todo', 'h-3.5 w-3.5') }} Tasks
+      </button>
+      <button type="button"
+              hx-get="/calendar?kind=routines&year={{ year }}&month={{ month }}"
+              hx-target="#calendar-body" hx-swap="innerHTML" hx-push-url="true"
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-colors {{ 'bg-white shadow-soft text-emerald-700 dark:bg-slate-700 dark:text-emerald-300' if kind == 'routines' else 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}">
+        {{ ui.icon('repeat', 'h-3.5 w-3.5') }} Routines
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
+    <div class="bg-white border border-slate-200/80 rounded-2xl shadow-soft p-5 dark:bg-slate-900 dark:border-slate-800">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ month_label }}</h2>
+        <div class="flex items-center gap-1.5">
+          <button type="button" hx-get="/calendar?kind={{ kind }}&year={{ prev_year }}&month={{ prev_month }}"
+                  hx-target="#calendar-body" hx-swap="innerHTML" hx-push-url="true"
+                  aria-label="Previous month"
+                  class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
+            {{ ui.icon('chevron-left', 'h-[17px] w-[17px]') }}
+          </button>
+          <button type="button" hx-get="/calendar?kind={{ kind }}&year={{ today_year }}&month={{ today_month }}"
+                  hx-target="#calendar-body" hx-swap="innerHTML" hx-push-url="true"
+                  class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10 transition-colors">
+            Today
+          </button>
+          <button type="button" hx-get="/calendar?kind={{ kind }}&year={{ next_year }}&month={{ next_month }}"
+                  hx-target="#calendar-body" hx-swap="innerHTML" hx-push-url="true"
+                  aria-label="Next month"
+                  class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
+            {{ ui.icon('chevron-right', 'h-[17px] w-[17px]') }}
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-7 mb-1.5">
+        {% for label in weekdays %}
+        <div class="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide py-1">{{ label }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="space-y-1.5">
+        {% for week in weeks %}
+        <div class="grid grid-cols-7 gap-1.5">
+          {% for cell in week %}
+          {% if cell %}
+          <button type="button"
+                  hx-get="/calendar/day?kind={{ kind }}&date_str={{ cell.date }}"
+                  hx-target="#day-panel" hx-swap="innerHTML"
+                  @click="sel = '{{ cell.date }}'"
+                  :class="sel === '{{ cell.date }}' ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900' : ''"
+                  class="cal-cell cal-{{ cell.level }} relative aspect-square rounded-xl border flex flex-col items-center justify-center text-sm transition-all hover:scale-[1.04] {% if cell.is_today %}ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900{% endif %}"
+                  title="{{ cell.date }}">
+            <span class="leading-none">{{ cell.day }}</span>
+            {% if cell.has_notes %}
+            <span class="absolute bottom-1.5 w-1 h-1 rounded-full bg-sky-400"></span>
+            {% elif cell.count > 0 %}
+            <span class="absolute bottom-1.5 w-1 h-1 rounded-full bg-white/70"></span>
+            {% endif %}
+          </button>
+          {% else %}
+          <span class="cal-cell invisible"></span>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="day-panel">
+      {% include "partials/day_panel.html" %}
+    </div>
+  </div>
+</div>

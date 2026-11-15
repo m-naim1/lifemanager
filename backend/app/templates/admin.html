@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Admin · LifeManager{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-4">
+      <span class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-300">
+        {{ ui.icon('shield-check', 'h-[22px] w-[22px]') }}
+      </span>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Admin</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage accounts, monitor usage and audit changes.</p>
+      </div>
+    </div>
+    <button type="button" hx-get="/admin/users/new?next=/admin" hx-target="#modal-root" hx-swap="innerHTML"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 shadow-brand transition-all hover:-translate-y-0.5">
+      {{ ui.icon('user-plus', 'h-4 w-4') }} Add user
+    </button>
+  </div>
+
+  {% if error %}
+  <div class="mb-4 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+    {{ ui.icon('circle-alert', 'h-[17px] w-[17px] shrink-0 mt-0.5') }}
+    <span>{{ error }}</span>
+  </div>
+  {% endif %}
+  {% if message %}
+  <div class="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+    {{ ui.icon('circle-check', 'h-[17px] w-[17px] shrink-0 mt-0.5') }}
+    <span>{{ message }}</span>
+  </div>
+  {% endif %}
+
+  <!-- Overview -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft">
+      <div class="flex items-center justify-between mb-3">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">{{ ui.icon('users', 'h-[17px] w-[17px]') }}</span>
+        <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">Accounts</span>
+      </div>
+      <p class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ totals.users }}</p>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">{{ totals.active_users }} active · {{ totals.admin_users }} admin{% if totals.admin_users != 1 %}s{% endif %}{% if totals.disabled_users %} · {{ totals.disabled_users }} disabled{% endif %}</p>
+    </div>
+    <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft">
+      <div class="flex items-center justify-between mb-3">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">{{ ui.icon('folder-kanban', 'h-[17px] w-[17px]') }}</span>
+        <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">Work</span>
+      </div>
+      <p class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ totals.projects }}</p>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">projects · {{ totals.tasks }} tasks · {{ totals.task_completions }} completions</p>
+    </div>
+    <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft">
+      <div class="flex items-center justify-between mb-3">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">{{ ui.icon('repeat', 'h-[17px] w-[17px]') }}</span>
+        <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">Habits</span>
+      </div>
+      <p class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ totals.routines }}</p>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">routines · {{ totals.routine_completions }} completions</p>
+    </div>
+    <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft">
+      <div class="flex items-center justify-between mb-3">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">{{ ui.icon('target', 'h-[17px] w-[17px]') }}</span>
+        <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">Growth</span>
+      </div>
+      <p class="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ totals.goals }}</p>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">{{ totals.goal_stages }} goal stages · +{{ totals.new_users_7d }} users this week</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+    <!-- Signups -->
+    <div class="xl:col-span-2 bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">New accounts</h2>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500">Last 14 days · {{ totals.new_users_30d }} in the last 30 days</p>
+        </div>
+        <span class="text-xs font-semibold tabular-nums text-violet-600 dark:text-violet-400">{{ totals.new_users_7d }} this week</span>
+      </div>
+      <div class="flex items-end gap-1 h-24">
+        {% for point in signup_series %}
+        <div class="flex-1 flex flex-col items-center justify-end gap-1 h-full group" title="{{ point.date }} · {{ point.count }} new">
+          <div class="w-full rounded-t bg-slate-100 dark:bg-slate-800 relative overflow-hidden" style="height: 70px">
+            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-violet-600 to-violet-400 rounded-t" style="height: {{ ((point.count / max_signup) * 100) if max_signup else 0 }}%"></div>
+          </div>
+          <span class="text-[8px] text-slate-400 dark:text-slate-500">{{ point.date[8:] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recent audit -->
+    <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Admin activity</h2>
+        {{ ui.tag(audit|length ~ ' recent', 'slate') }}
+      </div>
+      {% if audit %}
+      <ul class="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+        {% for item in audit %}
+        <li class="flex items-start gap-2.5 text-xs">
+          <span class="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 shrink-0">{{ ui.icon('activity', 'h-3 w-3') }}</span>
+          <div class="min-w-0">
+            <p class="text-slate-600 dark:text-slate-300"><span class="font-medium">{{ item.admin_email or 'System' }}</span>
+              {{ item.action|replace('.', ' ') }}{% if item.target_email %} <span class="text-slate-400 dark:text-slate-500">→ {{ item.target_email }}</span>{% endif %}
+            </p>
+            <p class="text-[10px] text-slate-400 dark:text-slate-500">{{ item.created_at[:10]|date }}{% if item.detail %} · {{ item.detail }}{% endif %}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-xs text-slate-400 dark:text-slate-500 py-6 text-center">No admin actions recorded yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl shadow-soft overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Users</h2>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500">{{ users|length }} of {{ all_user_count }} accounts</p>
+        </div>
+        <form method="get" action="/admin" class="flex flex-wrap items-center gap-2">
+          <input name="q" value="{{ q }}" placeholder="Search email…" class="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500" />
+          <select name="role" class="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-slate-200">
+            <option value="all" {{ 'selected' if role == 'all' }}>All roles</option>
+            <option value="admin" {{ 'selected' if role == 'admin' }}>Admins</option>
+            <option value="member" {{ 'selected' if role == 'member' }}>Members</option>
+          </select>
+          <select name="status" class="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-slate-200">
+            <option value="all" {{ 'selected' if status == 'all' }}>Any status</option>
+            <option value="active" {{ 'selected' if status == 'active' }}>Active</option>
+            <option value="disabled" {{ 'selected' if status == 'disabled' }}>Disabled</option>
+          </select>
+          <button type="submit" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">Filter</button>
+          {% if q or role != 'all' or status != 'all' %}
+          <a href="/admin" class="text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Reset</a>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+
+    {% if users %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 text-left text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <th class="px-5 py-3 font-medium">User</th>
+            <th class="px-4 py-3 font-medium">Usage</th>
+            <th class="px-4 py-3 font-medium hidden lg:table-cell">Completions</th>
+            <th class="px-4 py-3 font-medium hidden xl:table-cell">Last activity</th>
+            <th class="px-4 py-3 font-medium">Access</th>
+            <th class="px-5 py-3 font-medium text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for u in users %}
+          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+            <td class="px-5 py-3.5">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 text-white text-xs font-semibold shrink-0">
+                  {{ u.email[0]|upper }}
+                </span>
+                <div class="min-w-0">
+                  <a href="/admin/users/{{ u.id }}" class="font-medium text-slate-800 dark:text-slate-200 truncate hover:text-violet-600 dark:hover:text-violet-400">{{ u.email }}</a>
+                  <p class="text-[10px] text-slate-400 dark:text-slate-500">Joined {{ u.created_at[:10]|date }}{% if u.id == user.id %} · you{% endif %}</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3.5">
+              <div class="flex flex-wrap gap-1">
+                {{ ui.tag(u.project_count ~ ' projects', 'sky') }}
+                {{ ui.tag(u.task_count ~ ' tasks', 'blue') }}
+                {{ ui.tag(u.routine_count ~ ' routines', 'emerald') }}
+                {{ ui.tag(u.goal_count ~ ' goals', 'violet') }}
+              </div>
+            </td>
+            <td class="px-4 py-3.5 hidden lg:table-cell">
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ u.task_completion_count }} task · {{ u.routine_completion_count }} routine</p>
+            </td>
+            <td class="px-4 py-3.5 hidden xl:table-cell whitespace-nowrap">
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ (u.last_activity[:10]|date) if u.last_activity else '—' }}</p>
+            </td>
+            <td class="px-4 py-3.5">
+              <div class="flex flex-wrap gap-1">
+                {% if u.is_admin %}{{ ui.tag('Admin', 'violet') }}{% else %}{{ ui.tag('Member', 'slate') }}{% endif %}
+                {% if u.is_active %}{{ ui.tag('Active', 'emerald') }}{% else %}{{ ui.tag('Disabled', 'rose') }}{% endif %}
+              </div>
+            </td>
+            <td class="px-5 py-3.5">
+              <div class="flex items-center justify-end gap-1">
+                <a href="/admin/users/{{ u.id }}" class="px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-violet-700 hover:bg-violet-50 dark:text-slate-400 dark:hover:text-violet-300 dark:hover:bg-violet-500/10 transition-colors">View</a>
+                <button type="button" hx-get="/admin/users/{{ u.id }}/edit?next=/admin" hx-target="#modal-root" hx-swap="innerHTML"
+                        class="px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors">Edit</button>
+                <button type="button" hx-get="/admin/users/{{ u.id }}/reset-password?next=/admin" hx-target="#modal-root" hx-swap="innerHTML"
+                        class="px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-amber-700 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10 transition-colors">Reset</button>
+                <form method="post" action="/admin/users/{{ u.id }}/toggle-admin">
+                  <input type="hidden" name="next" value="/admin" />
+                  <button type="submit" class="px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-violet-700 hover:bg-violet-50 dark:text-slate-400 dark:hover:text-violet-300 dark:hover:bg-violet-500/10 transition-colors">{{ 'Demote' if u.is_admin else 'Promote' }}</button>
+                </form>
+                <form method="post" action="/admin/users/{{ u.id }}/toggle-active">
+                  <input type="hidden" name="next" value="/admin" />
+                  <button type="submit" class="px-2 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-amber-700 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10 transition-colors">{{ 'Disable' if u.is_active else 'Enable' }}</button>
+                </form>
+                <form method="post" action="/admin/users/{{ u.id }}/delete" onsubmit='return confirm({{ ("Delete " ~ u.email ~ " and ALL of their data?")|tojson }});'>
+                  <input type="hidden" name="next" value="/admin" />
+                  <button type="submit" class="px-2 py-1.5 rounded-lg text-[11px] font-medium text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="px-5 py-14 text-center">
+      <span class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 mb-3">{{ ui.icon('users', 'h-[22px] w-[22px]') }}</span>
+      <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No users match these filters</p>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Try clearing the search or filters.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

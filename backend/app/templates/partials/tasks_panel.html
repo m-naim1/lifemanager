@@ -1,0 +1,105 @@
+{% import "macros.html" as ui %}
+{% set tabs = [('pending', 'Pending'), ('overdue', 'Overdue'), ('done', 'Done'), ('all', 'All')] %}
+
+<!-- Filters -->
+<div class="flex flex-wrap items-center gap-3 mb-5">
+  <div class="flex gap-1 bg-slate-200/60 dark:bg-slate-800 rounded-xl p-1">
+    {% for key, label in tabs %}
+    <button type="button"
+            hx-get="/tasks?tab={{ key }}{% if q %}&q={{ q|urlencode }}{% endif %}"
+            hx-target="#tasks-panel" hx-swap="innerHTML" hx-push-url="true"
+            class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ 'bg-white shadow-soft text-slate-900 dark:bg-slate-700 dark:text-white' if tab == key else 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }} {{ 'text-rose-600 dark:text-rose-400' if key == 'overdue' and overdue_count and tab != key else '' }}">
+      {{ label }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <form hx-get="/tasks" hx-target="#tasks-panel" hx-swap="innerHTML" hx-push-url="true"
+        hx-trigger="input changed delay:300ms from:input[name='q'], submit"
+        class="relative flex-1 max-w-sm">
+    <input type="hidden" name="tab" value="{{ tab }}" />
+    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-[15px] w-[15px] text-slate-400"></i>
+    <input name="q" type="text" value="{{ q }}" placeholder="Search tasks…" autocomplete="off"
+           class="pl-9 w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200" />
+  </form>
+</div>
+
+<div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl shadow-soft overflow-hidden">
+  {% if not tasks %}
+  <div class="px-5 py-14 text-center">
+    <span class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-50 text-blue-400 dark:bg-blue-500/10 dark:text-blue-400 mb-3">
+      {% if q %}{{ ui.icon('search', 'h-5 w-5') }}{% else %}{{ ui.icon('list-todo', 'h-5 w-5') }}{% endif %}
+    </span>
+    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+      No {{ tab }} tasks{% if q %} match your search{% endif %}.
+    </p>
+  </div>
+  {% else %}
+  <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+    {% for task in tasks %}
+    <li class="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors group">
+      <form hx-post="/tasks/{{ task.id }}/toggle" hx-target="#tasks-panel" hx-swap="innerHTML">
+        <input type="hidden" name="date" value="{{ today_iso }}" />
+        <input type="hidden" name="fragment" value="tasks" />
+        <input type="hidden" name="tab" value="{{ tab }}" />
+        <input type="hidden" name="q" value="{{ q }}" />
+        <input type="hidden" name="next" value="/tasks" />
+        <button type="submit" title="Toggle done"
+                class="shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all border-2 {{ 'bg-emerald-500 border-emerald-500 text-white' if task._toggled else 'border-slate-300 text-transparent hover:border-emerald-400 hover:bg-emerald-50 dark:border-slate-600 dark:hover:border-emerald-400' }}">
+          {% if task._toggled %}{{ ui.icon('check', 'h-3.5 w-3.5') }}{% endif %}
+        </button>
+      </form>
+
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <p class="font-medium text-slate-900 dark:text-slate-100 truncate {{ 'line-through text-slate-400' if task._done }}">{{ task.title }}</p>
+          {% if task.schedule %}
+          {{ ui.tag(ui.schedule_label(task.schedule), 'blue') }}
+          {% else %}
+          {{ ui.tag('once', 'slate') }}
+          {% endif %}
+          {% if task.completion_mode and task.completion_mode != 'carry' %}
+          {{ ui.tag(task.completion_mode, 'amber') }}
+          {% endif %}
+          {% if task._overdue %}
+          <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-500/10 rounded-full px-2 py-0.5">
+            {{ ui.icon('triangle-alert', 'h-[11px] w-[11px]') }} Overdue
+          </span>
+          {% endif %}
+          {% if task.project_id %}
+          <a href="/projects/{{ task.project_id }}"
+             class="shrink-0 flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:hover:bg-sky-500/20 transition-colors">
+            {{ ui.icon('folder', 'h-[11px] w-[11px]') }} {{ project_names.get(task.project_id) }}
+          </a>
+          {% endif %}
+        </div>
+        {% if task.description or task.start_date or task.due_date %}
+        <div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 dark:text-slate-500">
+          {% if task.start_date %}<span>Start {{ task.start_date|short_date }}</span>{% endif %}
+          {% if task.due_date %}<span class="{{ 'text-rose-500 font-medium' if task._overdue }}">Due {{ task.due_date|short_date }}</span>{% endif %}
+          {% if task.description %}{{ ui.md(task.description, true) }}{% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button type="button" hx-get="/tasks/{{ task.id }}/edit?next=/tasks" hx-target="#modal-root" hx-swap="innerHTML"
+                class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors" title="Edit">
+          {{ ui.icon('pencil', 'h-[15px] w-[15px]') }}
+        </button>
+        <form hx-post="/tasks/{{ task.id }}/delete" hx-target="#tasks-panel" hx-swap="innerHTML"
+              hx-confirm="Delete task &quot;{{ task.title }}&quot;?">
+          <input type="hidden" name="fragment" value="tasks" />
+          <input type="hidden" name="tab" value="{{ tab }}" />
+          <input type="hidden" name="q" value="{{ q }}" />
+          <input type="hidden" name="next" value="/tasks" />
+          <button type="submit" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors" title="Delete">
+            {{ ui.icon('trash-2', 'h-[15px] w-[15px]') }}
+          </button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>

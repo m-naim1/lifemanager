@@ -1,0 +1,10 @@
+# Copy to `.dev.vars` for `npx wrangler dev` (gitignored).
+# Placeholders are fine locally: D1 runs locally against a SQLite file and
+# the container's D1 REST calls only happen when pointing at a remote database.
+
+CLOUDFLARE_API_TOKEN=dev-placeholder
+JWT_SECRET=dev-only-change-me
+
+# Optional admin bootstrap
+ADMIN_EMAIL=
+ADMIN_PASSWORD=

@@ -1,0 +1,186 @@
+{% import "macros.html" as ui %}
+{% set input_class = "w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500" %}
+
+<div class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+     onclick="if (event.target === this) document.getElementById('modal-root').innerHTML = ''">
+  <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm dark:bg-slate-950/80"></div>
+  <div class="modal-panel relative w-full max-w-2xl bg-white rounded-2xl shadow-lift border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight">{{ 'Edit Goal' if goal else 'New Goal' }}</h3>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Track a few numbers, or just move a percent bar.</p>
+      </div>
+      <button type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              onclick="document.getElementById('modal-root').innerHTML = ''" aria-label="Close">
+        {{ ui.icon('x', 'h-[18px] w-[18px]') }}
+      </button>
+    </div>
+
+    <div class="p-5" x-data='goalBuilder({{ builder|tojson }})'>
+      <form class="space-y-4"
+            hx-post="{{ '/goals/' ~ goal.id if goal else '/goals' }}"
+            hx-target="#modal-root" hx-swap="innerHTML">
+        <input type="hidden" name="next" value="{{ next_url }}" />
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Goal title</label>
+          <input name="title" type="text" required value="{{ form.title }}" placeholder="e.g. Hit 90 WPM in Colemak" autofocus class="{{ input_class }}" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description (optional)</label>
+          <textarea name="description" rows="2" placeholder="Why this matters, or what counts as a record. Markdown supported." class="{{ input_class }}">{{ form.description }}</textarea>
+        </div>
+
+        {% if goal %}
+        <div class="flex items-center gap-2 text-sm">
+          <span class="text-slate-500 dark:text-slate-400">Type</span>
+          {% set goal_kind_label = 'Percent' if goal.kind == 'percent' else ('Staged' if goal.kind == 'staged' else 'Measured') %}
+          {% set goal_kind_tone = 'blue' if goal.kind == 'percent' else ('emerald' if goal.kind == 'staged' else 'violet') %}
+          {{ ui.tag(goal_kind_label, goal_kind_tone, 'md') }}
+          <span class="text-[11px] text-slate-400 dark:text-slate-500">Goal type can’t be changed after creation.</span>
+        </div>
+        {% else %}
+        <div>
+          <span class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Goal type</span>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button type="button" @click="setKind('measured')"
+                    class="text-left rounded-xl border p-3 transition-all"
+                    :class="kind === 'measured' ? 'border-violet-400 bg-violet-50 dark:border-violet-500 dark:bg-violet-500/10' : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'">
+              <span class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ ui.icon('ruler', 'h-4 w-4 text-violet-500') }} Measured</span>
+              <span class="block text-[11px] text-slate-400 dark:text-slate-500 mt-1">Fields with units and targets.</span>
+            </button>
+            <button type="button" @click="setKind('percent')"
+                    class="text-left rounded-xl border p-3 transition-all"
+                    :class="kind === 'percent' ? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-500/10' : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'">
+              <span class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ ui.icon('gauge', 'h-4 w-4 text-blue-500') }} Percent</span>
+              <span class="block text-[11px] text-slate-400 dark:text-slate-500 mt-1">Update 0–100% whenever you like.</span>
+            </button>
+            <button type="button" @click="setKind('staged')"
+                    class="text-left rounded-xl border p-3 transition-all"
+                    :class="kind === 'staged' ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-500/10' : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'">
+              <span class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ ui.icon('list-checks', 'h-4 w-4 text-emerald-500') }} Staged</span>
+              <span class="block text-[11px] text-slate-400 dark:text-slate-500 mt-1">A checklist, one stage at a time.</span>
+            </button>
+          </div>
+          <input type="hidden" name="kind" :value="kind" />
+        </div>
+        {% endif %}
+
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 p-3" x-show="kind === 'measured'" x-cloak>
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Metrics</p>
+              <p class="text-[11px] text-slate-400 dark:text-slate-500">Example: WPM target 90, Accuracy target 97%.</p>
+            </div>
+            <button type="button" @click="addField()"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-300 text-slate-600 hover:text-violet-600 hover:border-violet-400 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-violet-400 transition-colors">
+              {{ ui.icon('plus', 'h-3.5 w-3.5') }} Add metric
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <template x-for="(field, index) in fields" :key="field.key">
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+                <input type="hidden" name="field_id" :value="field.id || ''" />
+                <div class="sm:col-span-4">
+                  <label class="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Metric</label>
+                  <input type="text" name="field_name" x-model="field.name" placeholder="WPM" class="{{ input_class }}" />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Unit</label>
+                  <input type="text" name="field_unit" x-model="field.unit" placeholder="WPM" class="{{ input_class }}" />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Target</label>
+                  <input type="number" step="any" name="field_target" x-model="field.target" placeholder="90" class="{{ input_class }}" />
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Compare by</label>
+                  <select name="field_compare" x-model="field.compare" class="{{ input_class }}">
+                    <option value="latest">Latest</option>
+                    <option value="average">Average</option>
+                    <option value="best">Best</option>
+                  </select>
+                </div>
+                <div class="sm:col-span-2 flex items-end gap-1">
+                  <div class="flex-1">
+                    <label class="block text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Better</label>
+                    <select name="field_direction" x-model="field.direction" class="{{ input_class }}">
+                      <option value="higher">Higher</option>
+                      <option value="lower">Lower</option>
+                    </select>
+                  </div>
+                  <button type="button" @click="if (confirm('Remove this metric and its recorded values?')) removeField(index)"
+                          class="p-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors" title="Remove metric"
+                          x-show="fields.length > 1">
+                    {{ ui.icon('trash-2', 'h-4 w-4') }}
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">Target is optional — leave it blank to chart values without a goal line. “Average” compares the average of all records to the target.</p>
+        </div>
+
+        <div x-show="kind === 'staged'" x-cloak class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 p-3">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Stages</p>
+              <p class="text-[11px] text-slate-400 dark:text-slate-500">Example: HTML → CSS → JavaScript → Tailwind → React.</p>
+            </div>
+            <button type="button" @click="addStage()"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-300 text-slate-600 hover:text-emerald-600 hover:border-emerald-400 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:text-emerald-400 transition-colors">
+              {{ ui.icon('plus', 'h-3.5 w-3.5') }} Add stage
+            </button>
+          </div>
+
+          <div class="space-y-2">
+            <template x-for="(stage, index) in stages" :key="stage.key">
+              <div class="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+                <input type="hidden" name="stage_id" :value="stage.id || ''" />
+                <input type="hidden" name="stage_done" :value="stage.done ? '1' : '0'" />
+                <button type="button" @click="toggleStage(stage)"
+                        class="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors"
+                        :class="stage.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 text-transparent dark:border-slate-600'"
+                        :title="stage.done ? 'Mark stage incomplete' : 'Mark stage complete'">
+                  {{ ui.icon('check', 'h-3.5 w-3.5') }}
+                </button>
+                <span class="shrink-0 w-5 text-center text-[11px] font-semibold text-slate-400 tabular-nums" x-text="index + 1"></span>
+                <input type="text" name="stage_title" x-model="stage.title" placeholder="e.g. Learn CSS layout"
+                       class="flex-1 min-w-0 bg-transparent border-0 px-1 py-1.5 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none" />
+                <button type="button" @click="removeStage(index)"
+                        class="shrink-0 p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors" title="Remove stage"
+                        x-show="stages.length > 1">
+                  {{ ui.icon('trash-2', 'h-4 w-4') }}
+                </button>
+              </div>
+            </template>
+          </div>
+          <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">Stages are ordered. Tick them off as you finish; the goal reaches 100% when every stage is done.</p>
+        </div>
+
+        <div x-show="kind === 'percent'" x-cloak class="rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50/60 dark:bg-blue-500/5 px-4 py-3">
+          <p class="text-sm font-medium text-blue-800 dark:text-blue-200">Simple percent goal</p>
+          <p class="text-[11px] text-blue-600/80 dark:text-blue-300/70 mt-1">You’ll update a 0–100% value whenever something changes. History and the progress chart are kept automatically.</p>
+        </div>
+
+        <label x-show="kind !== 'staged'" class="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" name="show_chart" value="1" x-model="showChart"
+                 class="w-4 h-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500 dark:border-slate-600 dark:bg-slate-800" />
+          Show progress charts
+        </label>
+
+        {% if error %}<p class="text-sm text-rose-600 dark:text-rose-400">{{ error }}</p>{% endif %}
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  onclick="document.getElementById('modal-root').innerHTML = ''">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50">
+            {{ 'Save changes' if goal else 'Create goal' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

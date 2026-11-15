@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Goals · LifeManager{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-4">
+      <span class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-300">
+        <i data-lucide="target" class="h-[22px] w-[22px]"></i>
+      </span>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Goals</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track the numbers that matter and watch the trend.</p>
+      </div>
+    </div>
+    <button type="button" hx-get="/goals/new?next=/goals" hx-target="#modal-root" hx-swap="innerHTML"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 shadow-brand transition-all hover:-translate-y-0.5">
+      <i data-lucide="plus" class="h-4 w-4"></i>
+      New Goal
+    </button>
+  </div>
+
+  <div id="goals-grid">
+    {% include "partials/goals_grid.html" %}
+  </div>
+</div>
+{% endblock %}

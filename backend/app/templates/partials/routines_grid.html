@@ -1,0 +1,95 @@
+{% import "macros.html" as ui %}
+{% if not routines %}
+<div class="bg-white border border-dashed border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-2xl py-16 text-center">
+  <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-400 mb-4">
+    {{ ui.icon('party-popper', 'h-[26px] w-[26px]') }}
+  </span>
+  <p class="text-slate-600 dark:text-slate-300 font-medium">No routines yet</p>
+  <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Build a habit — start small and show up often.</p>
+  <button type="button" hx-get="/routines/new?next=/routines" hx-target="#modal-root" hx-swap="innerHTML"
+          class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors">
+    {{ ui.icon('plus', 'h-[15px] w-[15px]') }} Create your first routine
+  </button>
+</div>
+{% else %}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for r in routines %}
+  {% set progress = r.progress %}
+  <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft hover:shadow-lift hover:border-emerald-300 dark:hover:border-emerald-600 hover:-translate-y-0.5 transition-all">
+    <div class="flex items-start justify-between gap-2 mb-1.5">
+      <h3 class="font-semibold text-slate-900 dark:text-slate-100">{{ r.name }}</h3>
+      {{ ui.tag(ui.frequency_label(r), 'emerald') }}
+    </div>
+    <p class="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+      {% if r.slot_days %}
+      on {% if r.frequency_unit == 'month' %}{{ r.slot_days|join(', ') }}{% else %}{% for d in r.slot_days %}{{ weekday_labels[d] if d >= 0 and d < 7 else d }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+      {% else %}any day{% endif %}
+    </p>
+    {% if r.description %}
+    <div class="mb-4">{{ ui.md(r.description, true) }}</div>
+    {% else %}
+    <p class="text-sm text-slate-300 dark:text-slate-600 mb-4">No description</p>
+    {% endif %}
+
+    <!-- Progress -->
+    <div class="mb-4">
+      {% if progress.target <= 12 %}
+      <div class="flex items-center gap-1.5 mb-2">
+        {% for i in range(1, progress.target + 1) %}
+        <span class="w-4 h-4 rounded-full transition-all {{ 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm' if i <= progress.completed else 'bg-slate-200 dark:bg-slate-700' }}"></span>
+        {% endfor %}
+        <span class="text-xs text-slate-500 dark:text-slate-400 ml-2 font-semibold tabular-nums">{{ progress.completed }}/{{ progress.target }}</span>
+      </div>
+      {% else %}
+      <div class="mb-2">
+        <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+          <span>{{ progress.completed }}/{{ progress.target }}</span>
+          <span class="font-semibold tabular-nums">{{ progress.percent }}%</span>
+        </div>
+        {{ ui.progress_bar(progress.percent, 'emerald') }}
+      </div>
+      {% endif %}
+      <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{{ progress.completed }} done {{ r.period_label }}</p>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <form hx-post="/routines/{{ r.id }}/complete" hx-target="#routines-grid" hx-swap="innerHTML">
+          <input type="hidden" name="date" value="{{ today_iso }}" />
+          <input type="hidden" name="fragment" value="routines" />
+          <input type="hidden" name="next" value="/routines" />
+          <button type="submit" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 shadow-sm transition-all hover:shadow-md active:scale-95">
+            {{ ui.icon('check', 'h-[13px] w-[13px]') }} Done
+          </button>
+        </form>
+        {% if progress.completed > 0 %}
+        <form hx-post="/routines/{{ r.id }}/undo" hx-target="#routines-grid" hx-swap="innerHTML">
+          <input type="hidden" name="date" value="{{ today_iso }}" />
+          <input type="hidden" name="fragment" value="routines" />
+          <input type="hidden" name="next" value="/routines" />
+          <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 transition-colors" title="Undo">
+            {{ ui.icon('rotate-ccw', 'h-[15px] w-[15px]') }}
+          </button>
+        </form>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-1">
+        <button type="button" hx-get="/routines/{{ r.id }}/edit?next=/routines" hx-target="#modal-root" hx-swap="innerHTML"
+                class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors" title="Edit">
+          {{ ui.icon('pencil', 'h-[15px] w-[15px]') }}
+        </button>
+        <form hx-post="/routines/{{ r.id }}/delete" hx-target="#routines-grid" hx-swap="innerHTML"
+              hx-confirm="Delete routine &quot;{{ r.name }}&quot;? Its history will be removed.">
+          <input type="hidden" name="fragment" value="routines" />
+          <input type="hidden" name="next" value="/routines" />
+          <button type="submit" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors" title="Delete">
+            {{ ui.icon('trash-2', 'h-[15px] w-[15px]') }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

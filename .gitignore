@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.db
+*.db-journal
+*.db.bak-*
+
+# Node
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Load test artifacts
+load/load-report/
+load/playwright/test-results/
+load/stress.exe
+.load/load-report/
+.load/playwright/test-results/
+.load/stress.exe
+
+# Env
+.env

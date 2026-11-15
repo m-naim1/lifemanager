@@ -1,0 +1,14 @@
+{
+  "name": "lifemanager-frontend-load",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test:load": "playwright test --config=playwright.config.js",
+    "test:load-headed": "playwright test --config=playwright.config.js --headed",
+    "report": "playwright show-report load-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

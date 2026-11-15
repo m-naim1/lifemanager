@@ -1,0 +1,410 @@
+/* LifeManager custom styles layered on top of the Tailwind Play CDN. */
+
+[x-cloak] {
+  display: none !important;
+}
+
+html {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* ---------- Theme accents ---------- */
+:root {
+  --accent-50: #eff6ff;
+  --accent-100: #dbeafe;
+  --accent-200: #bfdbfe;
+  --accent-300: #93c5fd;
+  --accent-400: #60a5fa;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+  --accent-700: #1d4ed8;
+  --app-glow: rgb(37 99 235 / 0.13);
+  --app-glow-2: rgb(14 165 233 / 0.08);
+}
+
+html[data-accent="violet"] {
+  --accent-50: #f5f3ff;
+  --accent-100: #ede9fe;
+  --accent-200: #ddd6fe;
+  --accent-300: #c4b5fd;
+  --accent-400: #a78bfa;
+  --accent-500: #8b5cf6;
+  --accent-600: #7c3aed;
+  --accent-700: #6d28d9;
+  --app-glow: rgb(124 58 237 / 0.14);
+  --app-glow-2: rgb(167 139 250 / 0.08);
+}
+
+html[data-accent="emerald"] {
+  --accent-50: #ecfdf5;
+  --accent-100: #d1fae5;
+  --accent-200: #a7f3d0;
+  --accent-300: #6ee7b7;
+  --accent-400: #34d399;
+  --accent-500: #10b981;
+  --accent-600: #059669;
+  --accent-700: #047857;
+  --app-glow: rgb(5 150 105 / 0.13);
+  --app-glow-2: rgb(52 211 153 / 0.08);
+}
+
+html[data-accent="rose"] {
+  --accent-50: #fff1f2;
+  --accent-100: #ffe4e6;
+  --accent-200: #fecdd3;
+  --accent-300: #fda4af;
+  --accent-400: #fb7185;
+  --accent-500: #f43f5e;
+  --accent-600: #e11d48;
+  --accent-700: #be123c;
+  --app-glow: rgb(225 29 72 / 0.12);
+  --app-glow-2: rgb(251 113 133 / 0.08);
+}
+
+html[data-accent="amber"] {
+  --accent-50: #fffbeb;
+  --accent-100: #fef3c7;
+  --accent-200: #fde68a;
+  --accent-300: #fcd34d;
+  --accent-400: #fbbf24;
+  --accent-500: #f59e0b;
+  --accent-600: #d97706;
+  --accent-700: #b45309;
+  --app-glow: rgb(217 119 6 / 0.13);
+  --app-glow-2: rgb(251 191 36 / 0.09);
+}
+
+html[data-accent="slate"] {
+  --accent-50: #f8fafc;
+  --accent-100: #f1f5f9;
+  --accent-200: #e2e8f0;
+  --accent-300: #cbd5e1;
+  --accent-400: #94a3b8;
+  --accent-500: #64748b;
+  --accent-600: #475569;
+  --accent-700: #334155;
+  --app-glow: rgb(71 85 105 / 0.12);
+  --app-glow-2: rgb(148 163 184 / 0.08);
+}
+
+body {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(65rem 40rem at 105% -12%, var(--app-glow), transparent 60%),
+    radial-gradient(55rem 38rem at -12% 8%, var(--app-glow-2), transparent 55%);
+  background-attachment: fixed;
+}
+
+.dark body {
+  background-color: #020617;
+  background-image:
+    radial-gradient(65rem 40rem at 105% -12%, var(--app-glow), transparent 60%),
+    radial-gradient(55rem 38rem at -12% 8%, var(--app-glow-2), transparent 52%);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent-500) 28%, transparent);
+}
+
+/* Accent helpers used by the app shell. */
+.brand-mark {
+  background-image: linear-gradient(135deg, var(--accent-600), var(--accent-400));
+  box-shadow: 0 12px 32px -10px color-mix(in srgb, var(--accent-600) 45%, transparent);
+}
+
+.accent-text {
+  color: var(--accent-600);
+}
+
+.dark .accent-text {
+  color: var(--accent-400);
+}
+
+.accent-soft {
+  background-color: var(--accent-50);
+  color: var(--accent-700);
+}
+
+.dark .accent-soft {
+  background-color: color-mix(in srgb, var(--accent-500) 18%, transparent);
+  color: var(--accent-300);
+}
+
+.accent-bg {
+  background-color: var(--accent-600);
+}
+
+.accent-bg:hover {
+  background-color: var(--accent-700);
+}
+
+.hero-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--accent-600) 0%,
+    var(--accent-700) 45%,
+    var(--accent-400) 100%
+  );
+}
+
+.theme-btn:hover {
+  color: var(--accent-600);
+  background-color: var(--accent-50);
+}
+
+.dark .theme-btn:hover {
+  color: var(--accent-400);
+  background-color: color-mix(in srgb, var(--accent-500) 16%, transparent);
+}
+
+.nav-active {
+  background-color: #fff;
+  color: var(--accent-700);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.03);
+}
+
+.dark .nav-active {
+  background-color: color-mix(in srgb, var(--accent-500) 22%, transparent);
+  color: var(--accent-200);
+}
+
+.nav-mobile-active {
+  background-color: var(--accent-50);
+  color: var(--accent-700);
+}
+
+.dark .nav-mobile-active {
+  background-color: color-mix(in srgb, var(--accent-500) 16%, transparent);
+  color: var(--accent-300);
+}
+
+
+
+/* ---------- Modal + list animations ---------- */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-panel {
+  animation: modal-in 0.2s ease;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6) rotate(-10deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pop {
+  animation: pop-in 0.25s ease;
+}
+
+/* ---------- Scrollbars ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.6);
+  border-radius: 8px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105 / 0.7);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- Markdown rendered content ---------- */
+.md {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: inherit;
+  word-wrap: break-word;
+}
+.md p {
+  margin: 0 0 0.5rem;
+}
+.md p:last-child {
+  margin-bottom: 0;
+}
+.md h1,
+.md h2,
+.md h3,
+.md h4 {
+  font-weight: 600;
+  margin: 0.75rem 0 0.4rem;
+  line-height: 1.3;
+}
+.md h1 {
+  font-size: 1.1rem;
+}
+.md h2 {
+  font-size: 1rem;
+}
+.md h3,
+.md h4 {
+  font-size: 0.9rem;
+}
+.md ul,
+.md ol {
+  padding-left: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+.md ul {
+  list-style: disc;
+}
+.md ol {
+  list-style: decimal;
+}
+.md li {
+  margin: 0.15rem 0;
+}
+.md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  background: rgb(148 163 184 / 0.18);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+}
+.md pre {
+  background: rgb(15 23 42 / 0.06);
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0 0 0.5rem;
+}
+.dark .md pre {
+  background: rgb(2 6 23 / 0.6);
+}
+.md pre code {
+  background: transparent;
+  padding: 0;
+}
+.md a {
+  color: var(--accent-600);
+  text-decoration: underline;
+}
+.dark .md a {
+  color: var(--accent-400);
+}
+.md blockquote {
+  border-left: 3px solid rgb(148 163 184 / 0.5);
+  padding-left: 0.75rem;
+  margin: 0 0 0.5rem;
+  color: rgb(100 116 139);
+}
+.dark .md blockquote {
+  color: rgb(148 163 184);
+}
+
+/* ---------- Activity heatmap ---------- */
+.heat-cell {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  position: relative;
+  transition: transform 0.1s ease;
+}
+.heat-cell:hover {
+  transform: scale(1.25);
+  z-index: 10;
+}
+.heat-empty {
+  background-color: transparent;
+}
+.heat-0 {
+  background-color: #ebedf0;
+}
+.heat-1 {
+  background-color: #9be9a8;
+}
+.heat-2 {
+  background-color: #40c463;
+}
+.heat-3 {
+  background-color: #30a14e;
+}
+.heat-4 {
+  background-color: #216e39;
+}
+.dark .heat-0 {
+  background-color: #1e293b;
+}
+.dark .heat-1 {
+  background-color: #134e4a;
+}
+.dark .heat-2 {
+  background-color: #0f766e;
+}
+.dark .heat-3 {
+  background-color: #0d9488;
+}
+.dark .heat-4 {
+  background-color: #14b8a6;
+}
+
+/* ---------- Calendar day cells ---------- */
+.cal-cell {
+  border-color: #e2e8f0;
+  background-color: #f8fafc;
+  color: #334155;
+}
+.cal-cell.cal-1 {
+  background-color: #dbeafe;
+  color: #1e3a8a;
+}
+.cal-cell.cal-2 {
+  background-color: #93c5fd;
+  color: #172554;
+}
+.cal-cell.cal-3 {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+.cal-cell.cal-4 {
+  background-color: #1d4ed8;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dark .cal-cell {
+  border-color: #334155;
+  background-color: transparent;
+  color: #94a3b8;
+}
+.dark .cal-cell.cal-1 {
+  background-color: #1e3a8a;
+  color: #cbd5e1;
+}
+.dark .cal-cell.cal-2 {
+  background-color: #1d4ed8;
+  color: #e2e8f0;
+}
+.dark .cal-cell.cal-3 {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+.dark .cal-cell.cal-4 {
+  background-color: #60a5fa;
+  color: #ffffff;
+}

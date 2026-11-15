@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}LifeManager{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var modes = ["light", "dark", "system"];
+        var mode = localStorage.getItem("lm-theme-mode");
+        if (!mode) mode = localStorage.getItem("theme") || "system";
+        if (modes.indexOf(mode) === -1) mode = "system";
+        var dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var accents = ["blue", "violet", "emerald", "rose", "amber", "slate"];
+        var accent = localStorage.getItem("lm-accent") || "blue";
+        if (accents.indexOf(accent) === -1) accent = "blue";
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.dataset.accent = accent;
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      } catch (e) {}
+    })();
+  </script>
+  <script src="/static/vendor/tailwind.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"]
+          },
+          boxShadow: {
+            soft: "0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.03)",
+            lift: "0 12px 32px -12px rgb(15 23 42 / 0.18)",
+            brand: "0 12px 32px -10px rgb(37 99 235 / 0.35)"
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="/static/app.css" />
+  <script defer src="/static/app.js"></script>
+  <script defer src="/static/vendor/alpine.min.js"></script>
+  <script defer src="/static/vendor/htmx.min.js"></script>
+  <script defer src="/static/vendor/lucide.min.js"></script>
+</head>
+<body class="min-h-screen text-slate-900 dark:text-slate-100">
+
+<header class="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-md dark:border-slate-800/70 dark:bg-slate-900/80" x-data="{ open: false }">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-3 group">
+      <span class="brand-mark inline-flex items-center justify-center w-9 h-9 rounded-xl text-white shadow-brand transition-transform group-hover:scale-105">
+        <i data-lucide="layout-dashboard" class="h-[18px] w-[18px]"></i>
+      </span>
+      <span class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
+        Life<span class="accent-text">Manager</span>
+      </span>
+    </a>
+
+    {% if user %}
+    {% set nav = [
+      ('/', 'Home', 'home'),
+      ('/projects', 'Projects', 'folder-kanban'),
+      ('/tasks', 'Tasks', 'list-todo'),
+      ('/routines', 'Routines', 'repeat'),
+      ('/goals', 'Goals', 'target'),
+      ('/calendar', 'Calendar', 'calendar-days')
+    ] %}
+    <nav class="flex items-center gap-1">
+      <span class="hidden sm:flex items-center gap-1 p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl">
+        {% for href, label, icon in nav %}
+        {% set active = current_path == href or (href != '/' and current_path.startswith(href)) %}
+        <a href="{{ href }}"
+           class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all {{ 'nav-active' if active else 'text-slate-500 hover:text-slate-800 hover:bg-white/60 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/60' }}">
+          <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+          {{ label }}
+        </a>
+        {% endfor %}
+      </span>
+
+      <span class="relative ml-1" x-data="themePicker()" @click.outside="menu = false">
+        <button type="button"
+                class="theme-btn p-2 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+                title="Appearance"
+                :aria-expanded="menu ? 'true' : 'false'"
+                @click="menu = !menu">
+          <i data-lucide="palette" class="h-[18px] w-[18px]"></i>
+        </button>
+
+        <div x-show="menu" x-cloak x-transition.opacity.duration.150ms
+             class="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lift backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95 z-[100]">
+          <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Appearance</p>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" @click="setMode('light')"
+                    class="px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                    :class="mode === 'light' ? 'accent-soft border-transparent' : 'border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'">Light</button>
+            <button type="button" @click="setMode('dark')"
+                    class="px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                    :class="mode === 'dark' ? 'accent-soft border-transparent' : 'border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'">Dark</button>
+            <button type="button" @click="setMode('system')"
+                    class="px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                    :class="mode === 'system' ? 'accent-soft border-transparent' : 'border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'">System</button>
+          </div>
+
+          <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mt-3 mb-1.5">Accent</p>
+          <div class="grid grid-cols-2 gap-1.5">
+            <template x-for="item in accents" :key="item.id">
+              <button type="button" @click="setAccent(item.id)"
+                      class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors"
+                      :class="accent === item.id ? 'border-slate-300 dark:border-slate-500 bg-slate-50 dark:bg-slate-800' : 'border-transparent text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'">
+                <span class="w-4 h-4 rounded-full border border-black/10 dark:border-white/20 shrink-0" :style="'background:' + item.color"></span>
+                <span x-text="item.label"></span>
+              </button>
+            </template>
+          </div>
+          <p class="mt-2 text-[10px] text-slate-400 dark:text-slate-500">Saved on this device.</p>
+        </div>
+      </span>
+
+      {% if user.is_admin %}
+      <a href="/admin" class="ml-1 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">Admin</a>
+      {% endif %}
+      <span class="ml-1 hidden md:inline text-xs text-slate-500 dark:text-slate-400">{{ user.email }}</span>
+      <form method="post" action="/logout" class="ml-1">
+        <button type="submit" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">Logout</button>
+      </form>
+
+      <div class="flex items-center gap-1 sm:hidden">
+        <button type="button"
+                class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                @click="open = !open"
+                aria-label="Toggle navigation">
+          <span x-show="!open"><i data-lucide="menu" class="h-[22px] w-[22px]"></i></span>
+          <span x-show="open"><i data-lucide="x" class="h-[22px] w-[22px]"></i></span>
+        </button>
+      </div>
+    </nav>
+    {% endif %}
+  </div>
+
+  {% if user %}
+  <nav x-show="open" x-cloak class="sm:hidden border-t border-slate-200/70 px-4 py-2 space-y-1 bg-white/95 dark:border-slate-800/70 dark:bg-slate-900/95">
+    {% for href, label, icon in nav %}
+    {% set active = current_path == href or (href != '/' and current_path.startswith(href)) %}
+    <a href="{{ href }}"
+       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium {{ 'nav-mobile-active' if active else 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+      <i data-lucide="{{ icon }}" class="h-[18px] w-[18px]"></i>
+      {{ label }}
+    </a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+</header>
+
+<main class="flex-1">
+  {% block content %}{% endblock %}
+</main>
+
+<div id="modal-root"></div>
+</body>
+</html>

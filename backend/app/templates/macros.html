@@ -1,0 +1,182 @@
+{% set tag_tones = {
+  'slate': 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+  'indigo': 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300',
+  'blue': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300',
+  'sky': 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
+  'violet': 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300',
+  'emerald': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+  'amber': 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
+  'rose': 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300'
+} %}
+{% set tag_sizes = {
+  'sm': 'text-[10px] font-medium px-1.5 py-0.5',
+  'md': 'text-[11px] font-medium px-2 py-0.5'
+} %}
+
+{% macro icon(name, cls='h-4 w-4') -%}
+<i data-lucide="{{ name }}" class="{{ cls }}"></i>
+{%- endmacro %}
+
+{% macro tag(text, tone='slate', size='sm') -%}
+<span class="inline-flex items-center gap-1 rounded-full whitespace-nowrap {{ tag_tones.get(tone, tag_tones['slate']) }} {{ tag_sizes.get(size, tag_sizes['sm']) }}">{{ text }}</span>
+{%- endmacro %}
+
+{% macro md(source, clamp=False) -%}
+{% if source %}<div class="md{{ ' line-clamp-2' if clamp else '' }}">{{ source|markdown|safe }}</div>{% endif %}
+{%- endmacro %}
+
+{% macro schedule_label(schedule, once='once') -%}
+{% if schedule %}{{ schedule.repeat_count }}×/{{ schedule.repeat_unit }}{% if schedule.slot_days %} on {% if schedule.repeat_unit == 'month' %}{{ schedule.slot_days|join(', ') }}{% else %}{% for d in schedule.slot_days %}{{ weekday_labels[d] if d >= 0 and d < 7 else d }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% endif %}{% else %}{{ once }}{% endif %}
+{%- endmacro %}
+
+{% macro frequency_label(routine) -%}
+{{ routine.frequency_count }}×/{{ routine.frequency_unit }}{% if routine.slot_days %} on {% if routine.frequency_unit == 'month' %}{{ routine.slot_days|join(', ') }}{% else %}{% for d in routine.slot_days %}{{ weekday_labels[d] if d >= 0 and d < 7 else d }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}{% endif %}
+{%- endmacro %}
+
+{% set section_tones = {
+  'blue': ('bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300', 'bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20'),
+  'sky': ('bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300', 'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20'),
+  'emerald': ('bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300', 'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20'),
+  'amber': ('bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300', 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20'),
+  'rose': ('bg-rose-100 text-rose-500 dark:bg-rose-500/15 dark:text-rose-300', 'bg-rose-50 text-rose-600 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20'),
+  'slate': ('bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300', 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700')
+} %}
+
+{% macro section_header(title, eyebrow='', count=0, tone='blue', icon_name='') -%}
+{% set t = section_tones.get(tone, section_tones['blue']) %}
+<div class="flex items-center gap-3 mb-3">
+  {% if icon_name %}
+  <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl shrink-0 {{ t[0] }}">{{ icon(icon_name, 'h-[17px] w-[17px]') }}</span>
+  {% endif %}
+  <div class="min-w-0">
+    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">{{ title }}</h2>
+    {% if eyebrow %}<p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ eyebrow }}</p>{% endif %}
+  </div>
+  {% if count > 0 %}
+  <span class="ml-auto shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ring-1 {{ t[1] }}">{{ count }}</span>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{% macro heatmap(heat, title, icon_name='') -%}
+<div class="w-full">
+  <div class="flex items-center gap-2.5 mb-4">
+    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ icon(icon_name or 'activity', 'h-[15px] w-[15px]') }}</span>
+    <div class="flex items-baseline justify-between flex-1 min-w-0">
+      <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ title }}</span>
+      <span class="text-xs text-slate-400 dark:text-slate-500">{{ heat.total }}{% if heat.total == 1 %} completion{% else %} completions{% endif %}</span>
+    </div>
+  </div>
+
+  <div class="flex gap-1.5">
+    <div class="flex flex-col text-[9px] text-slate-400 dark:text-slate-500 leading-none gap-[3px]">
+      {% for label in heatmap_days %}
+      <span style="height: 10px; width: 12px">{{ label }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="flex-1 min-w-0 overflow-x-auto pb-1">
+      <div class="w-max">
+        <div class="relative h-3 mb-1 text-[9px] text-slate-400 dark:text-slate-500">
+          {% for m in heat.months %}
+          <span class="absolute" style="left: {{ m.col * 13 }}px">{{ m.text }}</span>
+          {% endfor %}
+        </div>
+        <div class="flex" style="gap: 3px">
+          {% for column in heat.weeks %}
+          <div class="flex flex-col" style="gap: 3px">
+            {% for cell in column %}
+            {% if cell.count is none %}
+            <span class="heat-cell heat-empty"></span>
+            {% else %}
+            <span class="heat-cell heat-{{ 4 if cell.count > 4 else cell.count }}" title="{{ cell.date }} · {{ cell.count }} completions"></span>
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-1 mt-3 text-[9px] text-slate-400 dark:text-slate-500">
+    <span>Less</span>
+    {% for n in range(0, 5) %}
+    <span class="heat-cell heat-{{ n }}"></span>
+    {% endfor %}
+    <span>More</span>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro progress_bar(percent, tone='sky') -%}
+{% set tones = {
+  'sky': 'from-sky-500 to-blue-500',
+  'blue': 'from-blue-500 to-indigo-500',
+  'emerald': 'from-emerald-400 to-emerald-600',
+  'amber': 'from-amber-400 to-orange-500',
+  'violet': 'from-violet-500 to-purple-500',
+  'rose': 'from-rose-400 to-rose-600'
+} %}
+<div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+  <div class="h-full bg-gradient-to-r {{ tones.get(tone, tones['sky']) }} rounded-full transition-all duration-500" style="width: {{ percent }}%"></div>
+</div>
+{%- endmacro %}
+
+{% macro line_chart(chart) -%}
+{% set tones = {
+  'blue': ('stroke-blue-500', 'fill-blue-500', 'fill-blue-500/10'),
+  'emerald': ('stroke-emerald-500', 'fill-emerald-500', 'fill-emerald-500/10'),
+  'amber': ('stroke-amber-500', 'fill-amber-500', 'fill-amber-500/10'),
+  'violet': ('stroke-violet-500', 'fill-violet-500', 'fill-violet-500/10'),
+  'rose': ('stroke-rose-500', 'fill-rose-500', 'fill-rose-500/10'),
+  'sky': ('stroke-sky-500', 'fill-sky-500', 'fill-sky-500/10')
+} %}
+{% set t = tones.get(chart.tone, tones['blue']) %}
+<div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft">
+  <div class="flex items-start justify-between gap-3 mb-2">
+    <div>
+      <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ chart.name }}</p>
+      <p class="text-[11px] text-slate-400 dark:text-slate-500">{{ chart.unit or 'value' }}{% if chart.avg_points %} · dashed line is the running average{% endif %}</p>
+    </div>
+    {% if chart.has_data %}
+    <span class="text-xs font-semibold tabular-nums text-slate-500 dark:text-slate-400">{{ chart.latest|number }}{% if chart.unit %} {{ chart.unit }}{% endif %}</span>
+    {% endif %}
+  </div>
+
+  {% if chart.has_data %}
+  <svg viewBox="0 0 560 200" class="w-full h-auto" role="img" aria-label="{{ chart.name }} progress chart">
+    {% for tick in chart.y_ticks %}
+    <line x1="44" x2="542" y1="{{ tick.y }}" y2="{{ tick.y }}" class="stroke-slate-100 dark:stroke-slate-800" stroke-width="1" />
+    <text x="38" y="{{ tick.y + 3 }}" text-anchor="end" class="fill-slate-400 dark:fill-slate-500" style="font-size:10px">{{ tick.label }}</text>
+    {% endfor %}
+
+    {% if chart.target_y is not none %}
+    <line x1="44" x2="542" y1="{{ chart.target_y }}" y2="{{ chart.target_y }}" class="stroke-slate-400 dark:stroke-slate-500" stroke-width="1.2" stroke-dasharray="4 4" />
+    <text x="536" y="{{ chart.target_y - 5 }}" text-anchor="end" class="fill-slate-400 dark:fill-slate-500" style="font-size:10px">target {{ chart.target_label }}</text>
+    {% endif %}
+
+    <path d="{{ chart.area }}" class="{{ t[2] }}" />
+    {% if chart.avg_path %}
+    <path d="{{ chart.avg_path }}" fill="none" class="stroke-slate-400 dark:stroke-slate-500" stroke-width="1.5" stroke-dasharray="5 4" />
+    {% endif %}
+    <path d="{{ chart.path }}" fill="none" class="{{ t[0] }}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+
+    {% for p in chart.points %}
+    <circle cx="{{ p.x }}" cy="{{ p.y }}" r="3.5" class="{{ t[1] }}">
+      <title>{{ p.label }}</title>
+    </circle>
+    {% endfor %}
+
+    {% for label in chart.x_labels %}
+    <text x="{{ label.x }}" y="196" text-anchor="{{ 'middle' if chart.x_labels|length == 1 else ('start' if loop.first else 'end') }}" class="fill-slate-400 dark:fill-slate-500" style="font-size:10px">{{ label.label }}</text>
+    {% endfor %}
+  </svg>
+  {% else %}
+  <div class="py-10 text-center">
+    <p class="text-sm text-slate-400 dark:text-slate-500">No records yet</p>
+    <p class="text-xs text-slate-400/80 dark:text-slate-600 mt-1">Log a value to start the chart.</p>
+  </div>
+  {% endif %}
+</div>
+{%- endmacro %}

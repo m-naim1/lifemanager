@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}{{ goal.title }} · Goals · LifeManager{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  <a href="/goals" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-violet-600 dark:text-slate-400 dark:hover:text-violet-400 transition-colors mb-5">
+    {{ ui.icon('arrow-left', 'h-4 w-4') }} All goals
+  </a>
+
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2 mb-2">
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{{ goal.title }}</h1>
+        {% set goal_kind_label = 'Percent' if goal.kind == 'percent' else ('Staged' if goal.kind == 'staged' else 'Measured') %}
+        {% set goal_kind_tone = 'blue' if goal.kind == 'percent' else ('emerald' if goal.kind == 'staged' else 'violet') %}
+        {{ ui.tag(goal_kind_label, goal_kind_tone) }}
+        {% if goal.achieved %}{{ ui.tag('Achieved', 'emerald') }}{% endif %}
+        {% if goal.status == 'archived' %}{{ ui.tag('Archived', 'slate') }}{% endif %}
+      </div>
+      {% if goal.description %}
+      <div class="max-w-2xl text-sm text-slate-500 dark:text-slate-400">{{ ui.md(goal.description) }}</div>
+      {% endif %}
+      <p class="text-xs text-slate-400 dark:text-slate-500 mt-2">
+        {% if goal.kind == 'staged' %}
+        {{ goal.stages_done }}/{{ goal.stage_count }} stages complete
+        {% if goal.stage_count %}· last updated {{ goal.latest_date|date }}{% endif %}
+        {% else %}
+        {{ goal.record_count }} record{{ '' if goal.record_count == 1 else 's' }}
+        {% if goal.record_count %}· last updated {{ goal.latest_date|date }}{% endif %}
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button type="button" hx-get="/goals/{{ goal.id }}/edit?next=/goals/{{ goal.id }}" hx-target="#modal-root" hx-swap="innerHTML"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-violet-600 hover:bg-violet-50 dark:text-slate-300 dark:hover:text-violet-400 dark:hover:bg-violet-500/10 transition-colors">
+        {{ ui.icon('pencil', 'h-4 w-4') }} Edit
+      </button>
+      <form method="post" action="/goals/{{ goal.id }}/status">
+        <input type="hidden" name="status" value="{{ 'active' if goal.status == 'archived' else 'archived' }}" />
+        <input type="hidden" name="next" value="/goals/{{ goal.id }}" />
+        <button type="submit" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-300 dark:hover:text-amber-400 dark:hover:bg-amber-500/10 transition-colors">
+          {{ ui.icon('archive-restore' if goal.status == 'archived' else 'archive', 'h-4 w-4') }}
+          {{ 'Reopen' if goal.status == 'archived' else 'Archive' }}
+        </button>
+      </form>
+      <form hx-post="/goals/{{ goal.id }}/delete" hx-confirm="Delete goal &quot;{{ goal.title }}&quot;? Its history will be removed."
+            hx-target="#goal-content" hx-swap="innerHTML">
+        <input type="hidden" name="next" value="/goals" />
+        <button type="submit" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors">
+          {{ ui.icon('trash-2', 'h-4 w-4') }} Delete
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="goal-content">
+    {% include "partials/goal_content.html" %}
+  </div>
+</div>
+{% endblock %}

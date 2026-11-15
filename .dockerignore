@@ -1,0 +1,20 @@
+# Keep the Docker build context small (it includes the whole repo root).
+.git
+.venv
+**/.venv
+**/__pycache__
+**/*.pyc
+.load
+node_modules
+.wrangler
+.dev.vars
+
+# Local databases - never bake user data into images
+*.db
+*.db.bak-*
+backend/*.db
+backend/*.db.bak-*
+
+# These are pulled in explicitly via COPY in the Dockerfile
+Dockerfile
+.dockerignore

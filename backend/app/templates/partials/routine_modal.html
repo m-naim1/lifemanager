@@ -1,0 +1,96 @@
+{% import "macros.html" as ui %}
+{% set picker = {'mode': 'routine', 'count': count, 'unit': unit, 'days': slot_days} %}
+{% set input_class = "w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500" %}
+
+<div class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+     onclick="if (event.target === this) document.getElementById('modal-root').innerHTML = ''">
+  <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm dark:bg-slate-950/80"></div>
+  <div class="modal-panel relative w-full max-w-lg bg-white rounded-2xl shadow-lift border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+      <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight">{{ 'Edit Routine' if routine else 'New Routine' }}</h3>
+      <button type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              onclick="document.getElementById('modal-root').innerHTML = ''" aria-label="Close">
+        {{ ui.icon('x', 'h-[18px] w-[18px]') }}
+      </button>
+    </div>
+
+    <div class="p-5">
+      <form class="space-y-4"
+            hx-post="{{ '/routines/' ~ routine.id if routine else '/routines' }}"
+            hx-target="#modal-root" hx-swap="innerHTML">
+        <input type="hidden" name="next" value="{{ next_url }}" />
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
+          <input name="name" type="text" required value="{{ routine.name if routine else '' }}" placeholder="e.g. Exercise, Read, Meditate" autofocus class="{{ input_class }}" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description (optional)</label>
+          <textarea name="description" rows="2" placeholder="Markdown supported" class="{{ input_class }}">{{ routine.description if routine else '' }}</textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Frequency</label>
+          <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+            <div x-data='intervalPicker({{ picker|tojson }})' class="space-y-2.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm text-slate-500 dark:text-slate-400">Frequency</span>
+                <input type="number" name="frequency_count" min="1" max="1000" x-model.number="count" class="w-16 text-center bg-white border border-slate-300 rounded-lg text-sm px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200" />
+                <span class="text-sm text-slate-500 dark:text-slate-400">times per</span>
+                <select name="frequency_unit" x-model="unit" @change="changeUnit($event.target.value)"
+                        class="bg-white border border-slate-300 rounded-lg text-sm px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200">
+                  <option value="day">day</option>
+                  <option value="week">week</option>
+                  <option value="month">month</option>
+                  <option value="year">year</option>
+                </select>
+              </div>
+
+              <template x-if="hasDays">
+                <div class="pt-0.5">
+                  <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400" x-text="unit === 'week' ? 'Repeat on' : 'Repeat on days'"></span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500" x-text="days.length ? '(' + days.length + ' days)' : '(any day)'"></span>
+                  </div>
+                  <template x-if="unit === 'week'">
+                    <div class="flex flex-wrap gap-1.5">
+                      <template x-for="(label, i) in weekdayLabels" :key="i">
+                        <button type="button" @click="toggleDay(i)" x-text="label[0]"
+                                class="text-center w-8 h-8 rounded-lg text-xs font-medium transition-all select-none"
+                                :class="isSelected(i) ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400'"></button>
+                      </template>
+                    </div>
+                  </template>
+                  <template x-if="unit === 'month'">
+                    <div class="grid grid-cols-8 sm:grid-cols-12 gap-1.5">
+                      <template x-for="n in 31" :key="n">
+                        <button type="button" @click="toggleDay(n)" x-text="n"
+                                class="text-center w-8 h-8 rounded-lg text-xs font-medium transition-all select-none"
+                                :class="isSelected(n) ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400'"></button>
+                      </template>
+                    </div>
+                  </template>
+                  <template x-for="d in days" :key="d">
+                    <input type="hidden" name="slot_days" :value="d" />
+                  </template>
+                  <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">Picking days shows this habit only on those days; otherwise any day counts toward the target.</p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        {% if error %}<p class="text-sm text-rose-600">{{ error }}</p>{% endif %}
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  onclick="document.getElementById('modal-root').innerHTML = ''">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">
+            {{ 'Save changes' if routine else 'Create routine' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

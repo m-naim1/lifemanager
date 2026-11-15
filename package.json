@@ -1,0 +1,15 @@
+{
+  "name": "lifemanager",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "d1:migrate": "wrangler d1 migrations apply lifemanager --remote",
+    "d1:query": "wrangler d1 execute lifemanager --remote --command \"SELECT name FROM _schema_migrations\""
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251101.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.0.0"
+  }
+}

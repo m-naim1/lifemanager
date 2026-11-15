@@ -1,0 +1,69 @@
+{
+	// LifeManager on Cloudflare: a Worker fronting a Docker container
+	// (Python/FastAPI) with Cloudflare D1 as the database.
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "lifemanager",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-11-13",
+	"observability": {
+		"enabled": true
+	},
+	// D1 database. Fill in database_id after running:
+	//   npx wrangler d1 create lifemanager
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "lifemanager",
+			"database_id": "b5286e40-1e9c-4ea9-a576-728dceeafda4",
+			"migrations_dir": "backend/migrations"
+		},
+		{
+			"binding": "lifemanager",
+			"database_name": "lifemanager",
+			"database_id": "b5286e40-1e9c-4ea9-a576-728dceeafda4",
+			"remote": true
+		}
+	],
+	// Plain (non-secret) vars, forwarded into the container by worker/index.ts.
+	"vars": {
+		"CLOUDFLARE_ACCOUNT_ID": "44cb3e36f003c843c1243ba430c21a16",
+		"D1_DATABASE_ID": "b5286e40-1e9c-4ea9-a576-728dceeafda4",
+		"ALLOW_SIGNUP": "true"
+	},
+	// Set with: npx wrangler secret put CLOUDFLARE_API_TOKEN
+	//           npx wrangler secret put JWT_SECRET
+	"secrets": {
+		"required": [
+			"CLOUDFLARE_API_TOKEN",
+			"JWT_SECRET"
+		]
+	},
+	// The Docker container. `wrangler deploy` builds ./Dockerfile with Docker
+	// (build context = repo root) and pushes the image to Cloudflare's registry.
+	"containers": [
+		{
+			"class_name": "LifeManagerContainer",
+			"scheduling_policy": "default",
+			"image": "./Dockerfile",
+			"image_build_context": ".",
+			"instance_type": "lite",
+			"max_instances": 1
+		}
+	],
+	// One Durable Object owns the container; the app is stateless (state lives
+	// in D1), so a single shared instance routes all traffic.
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "CONTAINER",
+				"class_name": "LifeManagerContainer"
+			}
+		]
+	},
+	"exports": {
+		"LifeManagerContainer": {
+			"type": "durable-object",
+			"storage": "sqlite"
+		}
+	}
+}

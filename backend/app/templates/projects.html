@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Projects · LifeManager{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  <!-- Page header -->
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+    <div class="flex items-center gap-4">
+      <span class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-500/15 text-sky-600 dark:text-sky-300">
+        <i data-lucide="folder-kanban" class="h-[22px] w-[22px]"></i>
+      </span>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Projects</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Group related tasks, close them out, archive when done.</p>
+      </div>
+    </div>
+    <button type="button" hx-get="/projects/new?next={{ ('/projects?status=' ~ status)|urlencode }}" hx-target="#modal-root" hx-swap="innerHTML"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 shadow-brand transition-all hover:-translate-y-0.5">
+      <i data-lucide="plus" class="h-4 w-4"></i>
+      New Project
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 mb-6 bg-slate-200/60 dark:bg-slate-800 rounded-xl p-1 w-fit">
+    {% set tabs = [('open', 'Open'), ('closed', 'Closed'), ('archived', 'Archived')] %}
+    {% for key, label in tabs %}
+    <a href="/projects?status={{ key }}"
+       class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {{ 'bg-white shadow-soft text-slate-900 dark:bg-slate-700 dark:text-white' if status == key else 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200' }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if not projects %}
+  <div class="bg-white border border-dashed border-slate-300 dark:bg-slate-900 dark:border-slate-700 rounded-2xl py-16 text-center">
+    <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-500/10 text-sky-300 dark:text-sky-500 mb-4">
+      <i data-lucide="folder-open" class="h-[26px] w-[26px]"></i>
+    </span>
+    <p class="text-slate-600 dark:text-slate-300 font-medium">No {{ status }} projects yet</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">
+      {{ 'Create a project to bundle your work together.' if status == 'open' else 'Nothing here yet.' }}
+    </p>
+    <button type="button" hx-get="/projects/new?next={{ ('/projects?status=' ~ status)|urlencode }}" hx-target="#modal-root" hx-swap="innerHTML"
+            class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors">
+      <i data-lucide="plus" class="h-[15px] w-[15px]"></i>
+      Create your first project
+    </button>
+  </div>
+  {% else %}
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    {% for p in projects %}
+    <div class="group bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft hover:shadow-lift hover:border-sky-300 dark:hover:border-sky-600 hover:-translate-y-0.5 transition-all flex flex-col">
+      <a href="/projects/{{ p.id }}" class="flex-1 min-w-0">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-300 shrink-0">
+            {{ ui.icon('folder-kanban', 'h-4 w-4') }}
+          </span>
+          {{ ui.tag(p.status, 'emerald' if p.status == 'open' else 'slate') }}
+        </div>
+
+        <h3 class="font-semibold text-slate-900 dark:text-slate-100 truncate">{{ p.name }}</h3>
+        {% if p.description %}
+        {{ ui.md(p.description, true) }}
+        {% else %}
+        <p class="text-sm text-slate-300 dark:text-slate-600 mb-3 mt-0.5">No description</p>
+        {% endif %}
+
+        <div class="mb-4 mt-3">
+          <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+            <span>{{ p.done_count }}/{{ p.task_count }} tasks done</span>
+            <span class="font-semibold tabular-nums">{{ p.progress }}%</span>
+          </div>
+          {{ ui.progress_bar(p.progress, 'sky') }}
+        </div>
+      </a>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+        {% if p.deadline %}
+        <span class="inline-flex items-center gap-1.5 text-xs {{ 'text-rose-500 dark:text-rose-400' if p.overdue else 'text-slate-400 dark:text-slate-500' }}">
+          {{ ui.icon('calendar-days', 'h-[13px] w-[13px]') }} {{ p.deadline|date }}
+        </span>
+        {% else %}
+        <span class="text-xs text-slate-300 dark:text-slate-600">No deadline</span>
+        {% endif %}
+
+        <div class="flex items-center gap-1">
+          {% if p.status == 'open' %}
+          <form method="post" action="/projects/{{ p.id }}/status">
+            <input type="hidden" name="status" value="closed" />
+            <input type="hidden" name="next" value="/projects?status={{ status }}" />
+            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 transition-colors" title="Close">
+              {{ ui.icon('circle-check-big', 'h-[15px] w-[15px]') }}
+            </button>
+          </form>
+          {% elif p.status == 'closed' %}
+          <form method="post" action="/projects/{{ p.id }}/status">
+            <input type="hidden" name="status" value="open" />
+            <input type="hidden" name="next" value="/projects?status={{ status }}" />
+            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 transition-colors" title="Reopen">
+              {{ ui.icon('rotate-ccw', 'h-[15px] w-[15px]') }}
+            </button>
+          </form>
+          {% endif %}
+
+          {% if p.status != 'archived' %}
+          <form method="post" action="/projects/{{ p.id }}/status">
+            <input type="hidden" name="status" value="archived" />
+            <input type="hidden" name="next" value="/projects?status={{ status }}" />
+            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-400 dark:hover:text-amber-400 dark:hover:bg-amber-500/10 transition-colors" title="Archive">
+              {{ ui.icon('archive', 'h-[15px] w-[15px]') }}
+            </button>
+          </form>
+          {% else %}
+          <form method="post" action="/projects/{{ p.id }}/status">
+            <input type="hidden" name="status" value="open" />
+            <input type="hidden" name="next" value="/projects?status={{ status }}" />
+            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:text-slate-400 dark:hover:text-sky-400 dark:hover:bg-sky-500/10 transition-colors" title="Restore">
+              {{ ui.icon('archive-restore', 'h-[15px] w-[15px]') }}
+            </button>
+          </form>
+          {% endif %}
+
+          <button type="button" hx-get="/projects/{{ p.id }}/edit?next={{ ('/projects?status=' ~ status)|urlencode }}" hx-target="#modal-root" hx-swap="innerHTML"
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors" title="Edit">
+            {{ ui.icon('pencil', 'h-[15px] w-[15px]') }}
+          </button>
+
+          <form method="post" action="/projects/{{ p.id }}/delete" onsubmit='return confirm({{ ("Delete project " ~ p.name ~ "? Its tasks are kept but unlinked.")|tojson }});'>
+            <input type="hidden" name="next" value="/projects?status={{ status }}" />
+            <button type="submit" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors" title="Delete">
+              {{ ui.icon('trash-2', 'h-[15px] w-[15px]') }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

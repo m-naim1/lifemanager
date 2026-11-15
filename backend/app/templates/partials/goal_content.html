@@ -1,0 +1,255 @@
+{% import "macros.html" as ui %}
+{% set input_class = "w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500" %}
+
+{% if error %}
+<div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+  {{ error }}
+</div>
+{% endif %}
+
+{% if goal.kind == 'staged' %}
+{% set next_stage = (goal.stages|rejectattr('done')|list|first) if goal.stages else None %}
+<div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft mb-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">Stages complete</p>
+      <p class="mt-1 text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ goal.stages_done }}<span class="text-2xl text-slate-400 dark:text-slate-500">/{{ goal.stage_count }}</span></p>
+    </div>
+    <div class="text-right">
+      <p class="text-lg font-semibold tabular-nums text-slate-800 dark:text-slate-200">{{ goal.percent }}%</p>
+      {% if next_stage %}
+      <p class="text-xs text-slate-400 dark:text-slate-500">Next up: <span class="font-medium text-slate-600 dark:text-slate-300">{{ next_stage.title }}</span></p>
+      {% else %}
+      <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Every stage complete</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="mt-4">{{ ui.progress_bar(goal.percent, 'emerald') }}</div>
+</div>
+
+<div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl shadow-soft overflow-hidden mb-6">
+  <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">{{ ui.icon('list-checks', 'h-[16px] w-[16px]') }}</span>
+      <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Checklist</h2>
+    </div>
+    <span class="text-xs text-slate-400 dark:text-slate-500">{{ goal.stages_done }}/{{ goal.stage_count }} done</span>
+  </div>
+
+  {% if goal.stages %}
+  <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+    {% for stage in goal.stages %}
+    <li class="flex items-center gap-3 px-5 py-3.5 group hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+      <form hx-post="/goals/{{ goal.id }}/stages/{{ stage.id }}/toggle" hx-target="#goal-content" hx-swap="innerHTML">
+        <button type="submit"
+                class="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full border-2 transition-all {{ 'bg-emerald-500 border-emerald-500 text-white' if stage.done else 'border-slate-300 text-transparent hover:border-emerald-500 hover:text-emerald-500 dark:border-slate-600' }}"
+                title="{{ 'Mark incomplete' if stage.done else 'Mark complete' }}">
+          {{ ui.icon('check', 'h-[14px] w-[14px]') }}
+        </button>
+      </form>
+      <span class="shrink-0 w-6 text-center text-xs font-semibold tabular-nums text-slate-400 dark:text-slate-500">{{ loop.index }}</span>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm {{ 'line-through text-slate-400 dark:text-slate-500' if stage.done else 'font-medium text-slate-800 dark:text-slate-100' }}">{{ stage.title }}</p>
+        {% if stage.done and stage.completed_at %}
+        <p class="text-[11px] text-emerald-600/80 dark:text-emerald-400/70 mt-0.5">Completed {{ stage.completed_at[:10]|date }}</p>
+        {% endif %}
+      </div>
+      <form hx-post="/goals/{{ goal.id }}/stages/{{ stage.id }}/delete" hx-target="#goal-content" hx-swap="innerHTML"
+            hx-confirm="Delete stage &quot;{{ stage.title }}&quot;?">
+        <button type="submit" class="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:text-slate-600 dark:hover:text-rose-400 dark:hover:bg-rose-500/10 transition-colors" title="Delete stage">
+          {{ ui.icon('trash-2', 'h-[15px] w-[15px]') }}
+        </button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">No stages yet. Add the first one below.</div>
+  {% endif %}
+
+  <form hx-post="/goals/{{ goal.id }}/stages" hx-target="#goal-content" hx-swap="innerHTML"
+        class="flex items-center gap-2 px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+    <input type="text" name="title" placeholder="Add a stage, e.g. Learn React hooks" required
+           class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500" />
+    <button type="submit" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">
+      {{ ui.icon('plus', 'h-4 w-4') }} Add
+    </button>
+  </form>
+</div>
+{% else %}
+<!-- Snapshot -->
+{% if goal.kind == 'percent' and goal.fields %}
+{% set f = goal.fields[0] %}
+<div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft mb-6">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">Current progress</p>
+      <p class="mt-1 text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ f.display_current }}<span class="text-2xl text-slate-400 dark:text-slate-500">%</span></p>
+    </div>
+    <div class="text-right text-xs text-slate-400 dark:text-slate-500">
+      <p>Latest {{ f.display_current }}%</p>
+      <p>Average {{ f.display_average }}% · Best {{ f.display_best }}%</p>
+    </div>
+  </div>
+  <div class="mt-4">{{ ui.progress_bar(f.percent or 0, 'violet') }}</div>
+</div>
+{% elif goal.fields %}
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+  {% for f in goal.fields %}
+  <div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-4 shadow-soft">
+    <div class="flex items-center justify-between gap-2 mb-1">
+      <p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{{ f.name }}</p>
+      {% if f.at_target %}{{ ui.tag('On target', 'emerald') }}{% elif f.target_value is not none %}{{ ui.tag(f.compare_mode|capitalize, 'slate') }}{% endif %}
+    </div>
+    <p class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 tabular-nums">
+      {{ f.display_current }}{% if f.unit %}<span class="text-sm font-medium text-slate-400 dark:text-slate-500"> {{ f.unit }}</span>{% endif %}
+    </p>
+    {% if f.target_value is not none %}
+    <p class="text-[11px] text-slate-400 dark:text-slate-500">target {{ f.display_target }}{% if f.unit %} {{ f.unit }}{% endif %}</p>
+    {% else %}
+    <p class="text-[11px] text-slate-400 dark:text-slate-500">no target set</p>
+    {% endif %}
+    {% if f.percent is not none %}
+    <div class="mt-3">{{ ui.progress_bar(f.percent, f.tone) }}</div>
+    {% endif %}
+    <p class="mt-2 text-[10px] text-slate-400 dark:text-slate-500">avg {{ f.display_average }} · best {{ f.display_best }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Log record -->
+<div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl p-5 shadow-soft mb-6">
+  <div class="flex items-center gap-2.5 mb-4">
+    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">{{ ui.icon('plus-circle', 'h-[16px] w-[16px]') }}</span>
+    <div>
+      <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Log a record</h2>
+      <p class="text-[11px] text-slate-400 dark:text-slate-500">Add today’s numbers or backfill an earlier date.</p>
+    </div>
+  </div>
+
+  <form hx-post="/goals/{{ goal.id }}/entries" hx-target="#goal-content" hx-swap="innerHTML" class="space-y-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Date</label>
+        <input type="date" name="date" value="{{ today_iso }}" class="{{ input_class }}" />
+      </div>
+      {% for f in goal.fields %}
+      <div>
+        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+          {{ f.name }}{% if f.unit %} <span class="text-slate-400 dark:text-slate-500">({{ f.unit }})</span>{% endif %}
+        </label>
+        <input type="hidden" name="field_id" value="{{ f.id }}" />
+        <input type="number" step="any" name="value" placeholder="{{ f.display_target if f.target_value is not none else '0' }}"
+               {% if goal.kind == 'percent' %}min="0" max="100"{% endif %} class="{{ input_class }}" />
+      </div>
+      {% endfor %}
+    </div>
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="flex-1 min-w-[240px]">
+        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Note (optional)</label>
+        <input type="text" name="note" placeholder="e.g. Colemak lesson 12, felt smooth" class="{{ input_class }}" />
+      </div>
+      <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors">
+        {{ ui.icon('plus', 'h-4 w-4') }} Save record
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Charts -->
+{% if goal.show_chart and goal.charts and goal.record_count %}
+<div class="mb-6">
+  <div class="flex items-center gap-2 mb-3">
+    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ ui.icon('chart-line', 'h-[16px] w-[16px]') }}</span>
+    <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Progress over time</h2>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    {% for chart in goal.charts %}{{ ui.line_chart(chart) }}{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- History -->
+<div class="bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 rounded-2xl shadow-soft overflow-hidden">
+  <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ ui.icon('history', 'h-[16px] w-[16px]') }}</span>
+      <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">History</h2>
+    </div>
+    <span class="text-xs text-slate-400 dark:text-slate-500">{{ goal.record_count }} record{{ '' if goal.record_count == 1 else 's' }}</span>
+  </div>
+
+  {% if not goal.entries %}
+  <div class="px-5 py-12 text-center">
+    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">No records yet</p>
+    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Log your first value above — the chart will fill in as you go.</p>
+  </div>
+  {% else %}
+  <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+    {% for entry in goal.entries|reverse %}
+    <li x-data="{ edit: false }" class="px-5 py-4">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ entry.date|date }}</span>
+            {% for value in entry['values'] %}
+            <span class="inline-flex items-baseline gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <span class="text-slate-400 dark:text-slate-500">{{ value.name }}</span>
+              <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-200">{{ value.value|number }}{% if value.unit %} {{ value.unit }}{% endif %}</span>
+            </span>
+            {% endfor %}
+          </div>
+          {% if entry.note %}
+          <p class="mt-1.5 text-xs text-slate-400 dark:text-slate-500">{{ entry.note }}</p>
+          {% endif %}
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button type="button" @click="edit = !edit"
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:text-slate-500 dark:hover:text-violet-400 dark:hover:bg-violet-500/10 transition-colors" title="Edit record">
+            {{ ui.icon('pencil', 'h-[15px] w-[15px]') }}
+          </button>
+          <form hx-post="/goals/{{ goal.id }}/entries/{{ entry.id }}/delete" hx-target="#goal-content" hx-swap="innerHTML"
+                hx-confirm="Delete this record?">
+            <button type="submit" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 transition-colors" title="Delete record">
+              {{ ui.icon('trash-2', 'h-[15px] w-[15px]') }}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <form x-show="edit" x-cloak hx-post="/goals/{{ goal.id }}/entries/{{ entry.id }}" hx-target="#goal-content" hx-swap="innerHTML"
+            class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 p-3 space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">Date</label>
+            <input type="date" name="date" value="{{ entry.date }}" class="{{ input_class }}" />
+          </div>
+          {% for f in goal.fields %}
+          <div>
+            <label class="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              {{ f.name }}{% if f.unit %} <span class="text-slate-400">({{ f.unit }})</span>{% endif %}
+            </label>
+            <input type="hidden" name="field_id" value="{{ f.id }}" />
+            <input type="number" step="any" name="value" value="{{ entry.value_by_field.get(f.id, '') }}"
+                   {% if goal.kind == 'percent' %}min="0" max="100"{% endif %} class="{{ input_class }}" />
+          </div>
+          {% endfor %}
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="flex-1 min-w-[240px]">
+            <label class="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">Note</label>
+            <input type="text" name="note" value="{{ entry.note }}" class="{{ input_class }}" />
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" @click="edit = false" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="submit" class="px-3.5 py-2 rounded-lg text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors">Save</button>
+          </div>
+        </div>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}

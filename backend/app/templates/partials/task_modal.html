@@ -1,0 +1,147 @@
+{% import "macros.html" as ui %}
+{% set picker = {'mode': 'task', 'count': repeat_count, 'unit': repeat_unit, 'days': slot_days} %}
+{% set input_class = "w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500" %}
+
+<div class="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto p-4 sm:p-8"
+     onclick="if (event.target === this) document.getElementById('modal-root').innerHTML = ''">
+  <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm dark:bg-slate-950/80"></div>
+  <div class="modal-panel relative w-full max-w-lg bg-white rounded-2xl shadow-lift border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+      <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight">{{ 'Edit Task' if task else 'New Task' }}</h3>
+      <button type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+              onclick="document.getElementById('modal-root').innerHTML = ''" aria-label="Close">
+        {{ ui.icon('x', 'h-[18px] w-[18px]') }}
+      </button>
+    </div>
+
+    <div class="p-5">
+      <form class="space-y-4"
+            hx-post="{{ '/tasks/' ~ task.id if task else '/tasks' }}"
+            hx-target="#modal-root" hx-swap="innerHTML"
+            x-data="{ repeats: {{ 'true' if repeats else 'false' }}, mode: '{{ completion_mode }}' }">
+        <input type="hidden" name="next" value="{{ next_url }}" />
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title</label>
+          <input name="title" type="text" required value="{{ task.title if task else '' }}" placeholder="e.g. Review PR #14" autofocus class="{{ input_class }}" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description (optional)</label>
+          <textarea name="description" rows="2" placeholder="Markdown supported" class="{{ input_class }}">{{ task.description if task else '' }}</textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Project (optional)</label>
+          <select name="project_id" class="{{ input_class }}">
+            <option value="">— No project —</option>
+            {% for p in projects %}
+            <option value="{{ p.id }}" {% if default_project_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Start date</label>
+            <input name="start_date" type="date" value="{{ task.start_date if task else today_iso }}" class="{{ input_class }}" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" x-text="repeats ? 'End date (optional)' : 'Due date (optional)'"></label>
+            <input name="due_date" type="date" value="{{ (task.due_date or '') if task else '' }}" class="{{ input_class }}" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Repeats</label>
+          <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 w-fit">
+            <button type="button" @click="repeats = false"
+                    :class="!repeats ? 'bg-white shadow-soft text-slate-900 dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'"
+                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">Once</button>
+            <button type="button" @click="repeats = true"
+                    :class="repeats ? 'bg-white shadow-soft text-blue-700 dark:bg-slate-700 dark:text-blue-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'"
+                    class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">Repeat</button>
+          </div>
+          <input type="hidden" name="repeats" :value="repeats ? '1' : '0'" />
+
+          <div x-show="repeats" x-cloak class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 mt-2">
+            <div x-data='intervalPicker({{ picker|tojson }})' class="space-y-2.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm text-slate-500 dark:text-slate-400">Repeat</span>
+                <input type="number" name="repeat_count" min="1" max="100" x-model.number="count" class="w-16 text-center bg-white border border-slate-300 rounded-lg text-sm px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200" />
+                <span class="text-sm text-slate-500 dark:text-slate-400">times per</span>
+                <select name="repeat_unit" x-model="unit" @change="changeUnit($event.target.value)"
+                        class="bg-white border border-slate-300 rounded-lg text-sm px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 cursor-pointer dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200">
+                  <option value="day">day</option>
+                  <option value="week">week</option>
+                  <option value="month">month</option>
+                </select>
+              </div>
+
+              <template x-if="hasDays">
+                <div class="pt-0.5">
+                  <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400" x-text="unit === 'week' ? 'Repeat on' : 'Repeat on days'"></span>
+                  </div>
+                  <template x-if="unit === 'week'">
+                    <div class="flex flex-wrap gap-1.5">
+                      <template x-for="(label, i) in weekdayLabels" :key="i">
+                        <button type="button" @click="toggleDay(i)" x-text="label[0]"
+                                class="text-center w-8 h-8 rounded-lg text-xs font-medium transition-all select-none"
+                                :class="isSelected(i) ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400'"></button>
+                      </template>
+                    </div>
+                  </template>
+                  <template x-if="unit === 'month'">
+                    <div class="grid grid-cols-8 sm:grid-cols-12 gap-1.5">
+                      <template x-for="n in 31" :key="n">
+                        <button type="button" @click="toggleDay(n)" x-text="n"
+                                class="text-center w-8 h-8 rounded-lg text-xs font-medium transition-all select-none"
+                                :class="isSelected(n) ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500 dark:hover:text-blue-400'"></button>
+                      </template>
+                    </div>
+                  </template>
+                  <template x-for="d in days" :key="d">
+                    <input type="hidden" name="slot_days" :value="d" />
+                  </template>
+                  <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">The task repeats on the days you pick. No days picked = slots spread evenly.</p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">When the scheduled day passes</label>
+          <div class="grid grid-cols-1 gap-1.5">
+            {% set modes = [
+              ('carry', 'Carry forward', 'Missed slots stay due until you complete them'),
+              ('wait', 'Wait', 'Missed slots collect in the Overdue section'),
+              ('skip', 'Skip', 'Missed slots are silently dropped')
+            ] %}
+            {% for value, label, hint in modes %}
+            <label class="flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors"
+                   :class="mode === '{{ value }}' ? 'border-blue-400 bg-blue-50/60 dark:border-blue-500/50 dark:bg-blue-500/10' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'">
+              <input type="radio" name="completion_mode" value="{{ value }}" x-model="mode" class="mt-0.5 accent-blue-600" />
+              <span>
+                <span class="block text-sm font-medium text-slate-800 dark:text-slate-200">{{ label }}</span>
+                <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ hint }}</span>
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        {% if error %}<p class="text-sm text-rose-600">{{ error }}</p>{% endif %}
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                  onclick="document.getElementById('modal-root').innerHTML = ''">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+            {{ 'Save changes' if task else 'Create task' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

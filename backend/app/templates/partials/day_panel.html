@@ -1,0 +1,72 @@
+{% import "macros.html" as ui %}
+<div class="bg-white border border-slate-200/80 rounded-2xl shadow-soft p-5 dark:bg-slate-900 dark:border-slate-800 h-fit xl:sticky xl:top-24">
+  {% if selected %}
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ selected_long }}</h3>
+    <button type="button" hx-get="/calendar/day?kind={{ kind }}&date_str=" hx-target="#day-panel" hx-swap="innerHTML"
+            aria-label="Close"
+            class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+      {{ ui.icon('x', 'h-[15px] w-[15px]') }}
+    </button>
+  </div>
+
+  <!-- Completions -->
+  <p class="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500 font-medium mb-1.5">
+    {{ 'Completed tasks' if kind == 'tasks' else 'Completed routines' }} · {{ selected_completions|length }}
+  </p>
+  {% if selected_completions %}
+  <ul class="space-y-1.5 mb-4">
+    {% for c in selected_completions %}
+    <li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+      {{ ui.icon('check', 'h-3.5 w-3.5 text-emerald-500 shrink-0') }}
+      <span class="truncate">{{ c.title }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Nothing completed on this day.</p>
+  {% endif %}
+
+  {% if kind == 'tasks' %}
+  <!-- Notes -->
+  <p class="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500 font-medium mb-1.5">Day notes</p>
+  {% if tasks_for_notes %}
+  <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+    {% for task in tasks_for_notes %}
+    {% set note = note_by_task.get(task.id, '') %}
+    <div class="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{{ task.title }}</span>
+        {% if note %}
+        <button type="button"
+                hx-post="/tasks/{{ task.id }}/notes/{{ selected }}/delete"
+                hx-target="#day-panel" hx-swap="innerHTML" hx-include="#note-form-{{ task.id }}"
+                class="text-[11px] text-rose-500 hover:text-rose-600 font-medium shrink-0 ml-2">Remove</button>
+        {% endif %}
+      </div>
+      <form id="note-form-{{ task.id }}" hx-post="/tasks/{{ task.id }}/notes/{{ selected }}" hx-target="#day-panel" hx-swap="innerHTML"
+            class="flex items-start gap-2">
+        <input type="hidden" name="fragment" value="calendar_day" />
+        <input type="hidden" name="calendar_date" value="{{ selected }}" />
+        <input type="hidden" name="kind" value="{{ kind }}" />
+        <textarea name="note" rows="2" placeholder="Note for {{ task.title }} (Markdown supported)"
+                  class="w-full bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">{{ note }}</textarea>
+        <button type="submit" class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+          {{ ui.icon('pencil', 'h-[11px] w-[11px]') }} Save
+        </button>
+      </form>
+      {% if note %}<div class="mt-1.5 text-[11px]">{{ ui.md(note, true) }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-xs text-slate-400 dark:text-slate-500">Create tasks to attach day notes.</p>
+  {% endif %}
+  {% endif %}
+  {% else %}
+  <div class="py-10 text-center">
+    {{ ui.icon('calendar-days', 'h-8 w-8 mx-auto text-blue-500/50') }}
+    <p class="text-sm text-slate-400 dark:text-slate-500 mt-2">Select a day to inspect completions and notes.</p>
+  </div>
+  {% endif %}
+</div>
